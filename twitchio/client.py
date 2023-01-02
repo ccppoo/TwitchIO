@@ -673,7 +673,7 @@ class Client:
         """
         from .models import Stream
 
-        assert user_ids or game_ids or user_logins
+        assert user_ids or game_ids or user_logins or languages
         data = await self._http.get_streams(
             game_ids=game_ids,
             user_ids=user_ids,
