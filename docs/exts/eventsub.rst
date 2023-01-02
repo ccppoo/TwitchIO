@@ -89,6 +89,10 @@ Event Reference
 ----------------
 This is a list of events dispatched by the eventsub ext.
 
+.. function:: event_eventsub_notification_user_authorization_grant(event: UserAuthorizationGrantedData)
+
+    Called when your app has had access granted on a channel.
+
 .. function:: event_eventsub_revokation(event: RevokationEvent)
 
     Called when your app has had access revoked on a channel.
@@ -107,6 +111,10 @@ This is a list of events dispatched by the eventsub ext.
 .. function:: event_eventsub_notification_subscription(event: ChannelSubscribeData)
 
     Called when someone subscribes to a channel that you've subscribed to.
+
+.. function:: event_eventsub_notification_subscription_end(event: ChannelSubscriptionEndData)
+
+    Called when a subscription to a channel that you've subscribed to ends.
 
 .. function:: event_eventsub_notification_subscription_gift(event: ChannelSubscriptionGiftData)
 
@@ -159,6 +167,30 @@ This is a list of events dispatched by the eventsub ext.
 .. function:: event_eventsub_notification_stream_end(event: StreamOfflineData)
 
     Called when a stream ends on a channel you've subscribed to.
+
+.. function:: event_eventsub_notification_channel_goal_begin(event: ChannelGoalBeginProgressData)
+
+    Called when a streamer starts a goal on their channel.
+
+.. function:: event_eventsub_notification_channel_goal_progress(event: ChannelGoalBeginProgressData)
+
+    Called when there is an update event to a channel's goal.
+
+.. function:: event_eventsub_notification_channel_goal_end(event: ChannelGoalEndData)
+
+    Called when someone ends a goal on their channel.
+
+.. function:: event_eventsub_notification_hypetrain_begin(event: HypeTrainBeginProgressData)
+
+    Called when a hype train starts on their channel.
+
+.. function:: event_eventsub_notification_hypetrain_progress(event: HypeTrainBeginProgressData)
+
+    Called when a hype train receives an update on their channel.
+
+.. function:: event_eventsub_notification_hypetrain_end(event: HypeTrainEndData)
+
+    Called when a hype train ends on their channel.
 
 API Reference
 --------------
@@ -232,6 +264,18 @@ API Reference
 .. attributetable::: ChannelModeratorAddRemoveData
 
 .. autoclass:: ChannelModeratorAddRemoveData
+    :members:
+    :inherited-members:
+
+.. attributetable::: ChannelGoalBeginProgressData
+
+.. autoclass:: ChannelGoalBeginProgressData
+    :members:
+    :inherited-members:
+
+.. attributetable::: ChannelGoalEndData
+
+.. autoclass:: ChannelGoalEndData
     :members:
     :inherited-members:
 

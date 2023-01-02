@@ -1,14 +1,91 @@
 :orphan:
 
+
 Master
 ======
 - TwitchIO
+    - Additions
+        - Added optional ``started_at`` and ``ended_at`` arguments to :func:`~twitchio.PartialUser.fetch_clips`
+        - Updated docstring regarding new  HypeTrain contribution  method ``OTHER`` for :attr:`~twitchio.HypeTrainContribution.type`
+        - Add support for ``ciso8601`` if installed
+        - Added ``speed`` install flag (``pip install twitchio[speed]``) to install all available speedups
+        - Added :attr:`~twitchio.Game.igdb_id` to :class:`~twitchio.Game`
+        - Added ``igdb_ids`` argument to :func:`~twitchio.Client.fetch_games`
+
     - Bug fixes
+        - Fix :func:`~twitchio.PartialUser.fetch_bits_leaderboard` not handling ``started_at`` and :class:`~twitchio.BitsLeaderboard` not correctly parsing
+        - Fix parsing :class:`~twitchio.ScheduleSegment` where :attr:`~twitchio.ScheduleSegment.end_time` is None
+
+- ext.eventsub
+    - Additions
+        - Updated docs regarding new HypeTrain contribution method ``other`` for :attr:`~twitchio.ext.eventsub.HypeTrainContributor.type`
+
+2.5.0
+======
+- TwitchIO
+    - Additions
+        - Added :attr:`~twitchio.Message.first` to :class:`~twitchio.Message`
+        - Added :func:`~twitchio.PartialUser.fetch_channel_emotes` to :class:`~twitchio.PartialUser`
+        - Added :func:`~twitchio.Client.fetch_global_emotes` to :class:`~twitchio.Client`
+        - Added :func:`~twitchio.Client.event_channel_join_failure` event:
+            - This is dispatched when the bot fails to join a channel
+            - This also makes the channel join error message in logs optional
+    - Bug fixes
+        - Fix AuthenticationError not being properly propagated when a bad token is given
+        - Fix channel join failures causing `ValueError: list.remove(x): x not in list` when joining channels after the initial start
+        - Added :attr:`~twitchio.Chatter.is_vip` property to Chatter
+        - New PartialUser methods
+            - :func:`~twitchio.PartialUser.fetch_follower_count` to fetch total follower count of a User
+            - :func:`~twitchio.PartialUser.fetch_following_count` to fetch total following count of a User
+
         - Fix whispers that were not able to be parsed
+        - Fix USERSTATE parsing incorrect user
+        - Fix errors when event loop is started using `run_until_complete` to call methods prior to :func:`~twitchio.Client.run`
+        - Improved handling of USERNOTICE messages and the tags created for :func:`~twitchio.Client.event_raw_usernotice`
+
+- ext.routines
+    - Additions
+        - Added the :func:`~twitchio.ext.routines.Routine.change_interval` method.
 
 - ext.commands
     - Bug fixes
         - Make sure double-quotes are properly tokenized for bot commands
+
+- ext.sound
+    - Bug fixes
+        - Make system calls to ffmpeg are more robust (works on windows and linux)
+
+- ext.eventsub
+    - Additions
+        - Goal subscriptions have been Added
+            - :func:`~twitchio.ext.eventsub.EventSubClient.subscribe_channel_goal_begin`
+            - :func:`~twitchio.ext.eventsub.EventSubClient.subscribe_channel_goal_progress`
+            - :func:`~twitchio.ext.eventsub.EventSubClient.subscribe_channel_goal_end`
+            - :func:`~twitchio.ext.eventsub.event_eventsub_notification_channel_goal_begin`
+            - :func:`~twitchio.ext.eventsub.event_eventsub_notification_channel_goal_progress`
+            - :func:`~twitchio.ext.eventsub.event_eventsub_notification_channel_goal_end`
+
+        - Channel subscription end
+            - :func:`~twitchio.ext.eventsub.EventSubClient.subscribe_channel_subscription_end`
+        - User authorization grant
+            - :func:`~twitchio.ext.eventsub.EventSubClient.subscribe_user_authorization_granted`
+
+        - HypeTrainBeginProgressData now has the :attr:`~twitchio.ext.eventsub.HypeTrainBeginProgressData.level`
+
+
+    - Bug fixes
+        - Correct typo in :class:`~twitchio.ext.eventsub.HypeTrainBeginProgressData` attribute :attr:`~twitchio.ext.eventsub.HypeTrainBeginProgressData.expires`
+        - Correct typo "revokation" to "revocation" in server _message_types.
+
+- ext.pubsub
+    - Additions
+        - Websocket automatically handles "RECONNECT" requests by Twitch
+    - Bug fixes
+        - "type" of :class:`~twitchio.ext.pubsub.PubSubModerationActionChannelTerms` now uses the correct type data
+        - Correct typo in :class:`~twitchio.ext.eventsub.HypeTrainBeginProgressData` attribute :attr:`~twitchio.ext.eventsub.HypeTrainBeginProgressData.expires`
+        - Unsubscribing from PubSub events works again
+        - Fix a forgotten nonce in :func:`~twitchio.ext.pubsub.websocket._send_topics`
+        - :class:`~twitchio.ext.pubsub.PubSubModerationActionChannelTerms` now uses the correct type data
 
 2.4.0
 ======
@@ -56,7 +133,7 @@ Master
     - Bug fixes
         - Add type conversion for variable positional arguments
         - Fixed message content while handling commands in reply messages
-      
+
 - ext.pubsub
     - Bug fixes
         - :class:`~twitchio.ext.pubsub.PubSubModerationAction` now handles missing keys
@@ -94,7 +171,7 @@ Massive documentation updates
         - Fix bug where # prefixed channel names and capitals in initial_channels would not trigger :func:`~twitchio.Client.event_ready`
         - Adjusted join channel rate limit handling
         - :func:`twitchio.PartialUser.create_clip` has been fixed by converting bool to string in http request
-        - :func:`~twitchio.Client.fetch_cheermotes` color attribute corrected
+        - :attr:`~twitchio.Client.fetch_cheermotes` color attribute corrected
         - :func:`twitchio.PartialUser.fetch_channel_teams` returns empty list if no teams found rather than unhandled error
         - Fix :class:`twitchio.CustomRewardRedemption` so :func:`twitchio.CustomReward.get_redemptions` returns correctly
 
@@ -122,13 +199,13 @@ Massive documentation updates
 
 - TwitchIO
     - Loosen aiohttp requirements to allow 3.8.1
-    - :class:`twitchio.Stream` was missing from ``__all__``. It is now available in the twitchio namespace.
+    - :class:`~twitchio.Stream` was missing from ``__all__``. It is now available in the twitchio namespace.
     - Added ``.status``, ``.reason`` and ``.extra`` to :class:`HTTPException`
     - Fix ``Message._timestamp`` value when tag is not provided by twitch
-    - Fix :func:`twitchio.Client.wait_for_ready`
-    - Remove loop= parameter inside :func:`twitchio.Client.wait_for` for 3.10 compatibility
-    - Add ``is_broadcaster`` check to :class:`twitchio.PartialChatter`. This is accessible as ``Context.author.is_broadcaster``
-    - :func:`twitchio.PartialUser.fetch_follow` will now return ``None`` if the FollowEvent does not exists
+    - Fix :func:`~twitchio.Client.wait_for_ready`
+    - Remove loop= parameter inside :func:`~twitchio.Client.wait_for` for 3.10 compatibility
+    - Add :attr:`~twitchio.Chatter.is_broadcaster` check to :class:`~twitchio.PartialChatter`. This is accessible as ``Context.author.is_broadcaster``
+    - :func:`~twitchio.PartialUser.fetch_follow` will now return ``None`` if the FollowEvent does not exists
     - TwitchIO will now correctly handle error raised when only the prefix is typed in chat
     - Fix paginate logic in :func:`TwitchHTTP.request`
 

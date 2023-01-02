@@ -30,7 +30,7 @@ import traceback
 import sys
 from typing import Union, Callable, List, Optional, Tuple, Any, Coroutine, Dict
 
-from twitchio.errors import HTTPException
+from twitchio.errors import HTTPException, AuthenticationError
 from . import models
 from .websocket import WSConnection
 from .http import TwitchHTTP
@@ -155,7 +155,8 @@ class Client:
         connects to the twitch IRC server, and cleans up when done.
         """
         try:
-            self.loop.create_task(self.connect())
+            task = self.loop.create_task(self.connect())
+            self.loop.run_until_complete(task)  # this'll raise if the connect fails
             self.loop.run_forever()
         except KeyboardInterrupt:
             pass
@@ -573,6 +574,20 @@ class Client:
         data = await self._http.get_cheermotes(str(user_id) if user_id else None)
         return [models.CheerEmote(self._http, x) for x in data]
 
+    async def fetch_global_emotes(self):
+        """|coro|
+
+        Fetches global emotes from the twitch API
+
+        Returns
+        --------
+            List[:class:`twitchio.GlobalEmote`]
+        """
+        from .models import GlobalEmote
+
+        data = await self._http.get_global_emotes()
+        return [GlobalEmote(self._http, x) for x in data]
+
     async def fetch_top_games(self) -> List[models.Game]:
         """|coro|
 
@@ -585,7 +600,9 @@ class Client:
         data = await self._http.get_top_games()
         return [models.Game(d) for d in data]
 
-    async def fetch_games(self, ids: List[int] = None, names: List[str] = None) -> List[models.Game]:
+    async def fetch_games(
+        self, ids: Optional[List[int]] = None, names: Optional[List[str]] = None, igdb_ids: Optional[List[int]] = None
+    ) -> List[models.Game]:
         """|coro|
 
         Fetches games by id or name.
@@ -597,15 +614,18 @@ class Client:
             An optional list of game ids
         names: Optional[List[:class:`str`]]
             An optional list of game names
+        igdb_ids: Optional[List[:class:`int`]]
+            An optional list of IGDB game ids
 
         Returns
         --------
             List[:class:`twitchio.Game`]
         """
-        data = await self._http.get_games(ids, names)
+
+        data = await self._http.get_games(ids, names, igdb_ids)
         return [models.Game(d) for d in data]
 
-    async def fetch_tags(self, ids: List[str] = None):
+    async def fetch_tags(self, ids: Optional[List[str]] = None):
         """|coro|
 
         Fetches stream tags.
@@ -624,11 +644,11 @@ class Client:
 
     async def fetch_streams(
         self,
-        user_ids: List[int] = None,
-        game_ids: List[int] = None,
-        user_logins: List[str] = None,
-        languages: List[str] = None,
-        token: str = None,
+        user_ids: Optional[List[int]] = None,
+        game_ids: Optional[List[int]] = None,
+        user_logins: Optional[List[str]] = None,
+        languages: Optional[List[str]] = None,
+        token: Optional[str] = None,
     ):
         """|coro|
 
@@ -665,8 +685,8 @@ class Client:
 
     async def fetch_teams(
         self,
-        team_name: str = None,
-        team_id: str = None,
+        team_name: Optional[str] = None,
+        team_id: Optional[str] = None,
     ):
         """|coro|
 
@@ -1007,3 +1027,16 @@ class Client:
         channel: :class:`.Channel`
             The channel that was joined.
         """
+        pass
+
+    async def event_channel_join_failure(self, channel: str):
+        """|coro|
+
+        Event called when the bot fails to join a channel.
+
+        Parameters
+        ----------
+        channel: `str`
+            The channel name that was attempted to be joined.
+        """
+        logger.error(f'The channel "{channel}" was unable to be joined. Check the channel is valid.')

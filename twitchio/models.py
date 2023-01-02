@@ -37,6 +37,8 @@ __all__ = (
     "Clip",
     "CheerEmote",
     "CheerEmoteTier",
+    "GlobalEmote",
+    "ChannelEmote",
     "HypeTrainContribution",
     "HypeTrainEvent",
     "BanEvent",
@@ -83,9 +85,9 @@ class BitsLeaderboard:
 
     Attributes
     ------------
-    started_at: :class:`datetime.datetime`
+    started_at: Optional[:class:`datetime.datetime`]
         The time the leaderboard started.
-    ended_at: :class`datetime.datetime`
+    ended_at: Optional[:class:`datetime.datetime`]
         The time the leaderboard ended.
     leaders: List[:class:`BitLeaderboardUser`]
         The current leaders of the Leaderboard.
@@ -95,8 +97,10 @@ class BitsLeaderboard:
 
     def __init__(self, http: "TwitchHTTP", data: dict):
         self._http = http
-        self.started_at = datetime.datetime.fromisoformat(data["date_range"]["started_at"])
-        self.ended_at = datetime.datetime.fromisoformat(data["date_range"]["ended_at"])
+        self.started_at = (
+            parse_timestamp(data["date_range"]["started_at"]) if data["date_range"]["started_at"] else None
+        )
+        self.ended_at = parse_timestamp(data["date_range"]["ended_at"]) if data["date_range"]["ended_at"] else None
         self.leaders = [BitLeaderboardUser(http, x) for x in data["data"]]
 
     def __repr__(self):
@@ -172,6 +176,78 @@ class CheerEmote:
 
     def __repr__(self):
         return f"<CheerEmote prefix={self.prefix} type={self.type} order={self.order}>"
+
+
+class GlobalEmote:
+    """
+    Represents a Global Emote
+
+    Attributes
+    -----------
+    id: :class:`str`
+        The ID of the emote.
+    name: :class:`str`
+        The name of the emote.
+    images: :class:`dict`
+        Contains the image URLs for the emote. These image URLs will always provide a static (i.e., non-animated) emote image with a light background.
+    format: List[:class:`str`]
+        The formats that the emote is available in.
+    scale: List[:class:`str`]
+        The sizes that the emote is available in.
+    theme_mode: List[:class:`str`]
+        The background themes that the emote is available in.
+    """
+
+    __slots__ = ("id", "name", "images", "format", "scale", "theme_mode", "template")
+
+    def __init__(self, http: "TwitchHTTP", data: dict):
+        self.id: str = data["id"]
+        self.name: str = data["name"]
+        self.images: dict = data["images"]
+        self.format: List[str] = data["format"]
+        self.scale: List[str] = data["scale"]
+        self.theme_mode: List[str] = data["theme_mode"]
+
+    def __repr__(self):
+        return f"<GlobalEmote id={self.id} name={self.name}"
+
+
+class ChannelEmote(GlobalEmote):
+    """
+    Represents a Channel Emote
+
+    Attributes
+    -----------
+    id: :class:`str`
+        The ID of the emote.
+    name: :class:`str`
+        The name of the emote.
+    images: :class:`dict`
+        Contains the image URLs for the emote. These image URLs will always provide a static (i.e., non-animated) emote image with a light background.
+    tier: :class:`str`
+        The subscriber tier at which the emote is unlocked.
+    type: :class:`str`
+        The type of emote.
+    set_id: :class:`str`
+        An ID that identifies the emote set that the emote belongs to.
+    format: List[:class:`str`]
+        The formats that the emote is available in.
+    scale: List[:class:`str`]
+        The sizes that the emote is available in.
+    theme_mode: List[:class:`str`]
+        The background themes that the emote is available in.
+    """
+
+    __slots__ = ("tier", "type", "set_id")
+
+    def __init__(self, http: "TwitchHTTP", data: dict):
+        super().__init__(http, data)
+        self.tier: str = data["tier"]
+        self.type: str = data["emote_type"]
+        self.set_id: str = data["emote_set_id"]
+
+    def __repr__(self):
+        return f"<ChannelEmote id={self.id} name={self.name} type={self.type}>"
 
 
 class Clip:
@@ -259,7 +335,7 @@ class HypeTrainContribution:
         If type is ``SUBS``, aggregate total where 500, 1000, or 2500 represent tier 1, 2, or 3 subscriptions respectively.
         For example, if top contributor has gifted a tier 1, 2, and 3 subscription, total would be 4000.
     type: :class:`str`
-        Identifies the contribution method, either BITS or SUBS.
+        Identifies the contribution method, either BITS, SUBS or OTHER.
     user: :class:`~twitchio.PartialUser`
         The user making the contribution.
     """
@@ -534,15 +610,18 @@ class Game:
     name: :class:`str`
         Game name.
     box_art_url: :class:`str`
-        Template URL for the game’s box art.
+        Template URL for the game's box art.
+    igdb_id: Optional[:class:`int`]
+        The IGDB ID of the game. If this is not available to Twitch it will return None
     """
 
-    __slots__ = "id", "name", "box_art_url"
+    __slots__ = "id", "name", "box_art_url", "igdb_id"
 
     def __init__(self, data: dict):
         self.id: int = int(data["id"])
         self.name: str = data["name"]
         self.box_art_url: str = data["box_art_url"]
+        self.igdb_id: Optional[int] = int(data["igdb_id"]) if data["igdb_id"] else None
 
     def __repr__(self):
         return f"<Game id={self.id} name={self.name}>"
@@ -997,6 +1076,7 @@ class ChannelInfo:
         Language of the channel.
     delay: :class:`int`
         Stream delay in seconds.
+        This defaults to 0 if the broadcaster_id does not match the user access token.
     """
 
     __slots__ = ("user", "game_id", "game_name", "title", "language", "delay")
@@ -1182,7 +1262,7 @@ class ScheduleSegment:
         The ID for the scheduled broadcast.
     start_time: :class:`datetime.datetime`
         Scheduled start time for the scheduled broadcast
-    end_time: :class:`datetime.datetime`
+    end_time: Optional[:class:`datetime.datetime`]
         Scheduled end time for the scheduled broadcast
     title: :class:`str`
         Title for the scheduled broadcast.
@@ -1199,7 +1279,7 @@ class ScheduleSegment:
     def __init__(self, data: dict):
         self.id: str = data["id"]
         self.start_time = parse_timestamp(data["start_time"])
-        self.end_time = parse_timestamp(data["end_time"])
+        self.end_time = parse_timestamp(data["end_time"]) if data["end_time"] else None
         self.title: str = data["title"]
         self.canceled_until = parse_timestamp(data["canceled_until"]) if data["canceled_until"] else None
         self.category = ScheduleCategory(data["category"]) if data["category"] else None
@@ -1373,6 +1453,11 @@ class Poll:
     """
     Represents a list of Polls for a broadcaster / channel
 
+    .. note::
+
+        Twitch have removed support for voting with bits.
+        By default bits_votes, bits_voting_enabled and bits_per_vote will be received as either 0 or False.
+
     Attributes
     -----------
     id: :class:`str`
@@ -1385,8 +1470,20 @@ class Poll:
         The poll choices.
     bits_voting_enabled: :class:`bool`
         Indicates if Bits can be used for voting.
+
+        .. warning::
+
+            Twitch have removed support for voting with bits.
+            This will return as False
+
     bits_per_vote: :class:`int`
         Number of Bits required to vote once with Bits.
+
+        .. warning::
+
+            Twitch have removed support for voting with bits.
+            This will return as 0
+
     channel_points_voting_enabled: :class:`bool`
         Indicates if Channel Points can be used for voting.
     channel_points_per_vote: :class:`int`
@@ -1449,6 +1546,12 @@ class PollChoice:
         Number of votes received via Channel Points.
     bits_votes: :class:`int`
         Number of votes received via Bits.
+
+        .. warning::
+
+            Twitch have removed support for voting with bits.
+            This will return as 0
+
     """
 
     __slots__ = ("id", "title", "votes", "channel_points_votes", "bits_votes")
